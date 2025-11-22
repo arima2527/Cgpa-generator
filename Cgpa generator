@@ -1,0 +1,283 @@
+class CGPAGenerator:
+    def __init__(self):
+        self.students = {}
+        self.grade_points = {
+            'A+': 4.0, 'A': 4.0, 'A-': 3.7,
+            'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+            'C+': 2.3, 'C': 2.0, 'C-': 1.7,
+            'D+': 1.3, 'D': 1.0, 'F': 0.0
+        }
+    
+    def add_student(self):
+        """Add a new student to the system"""
+        print("\n--- Add New Student ---")
+        student_id = input("Enter Student ID: ")
+        name = input("Enter Student Name: ")
+        
+        if student_id in self.students:
+            print("Student ID already exists!")
+            return
+        
+        self.students[student_id] = {
+            'name': name,
+            'semesters': {}
+        }
+        print(f"Student {name} added successfully!")
+    
+    def add_semester(self):
+        """Add a semester for a student"""
+        student_id = input("Enter Student ID: ")
+        
+        if student_id not in self.students:
+            print("Student not found!")
+            return
+        
+        semester_name = input("Enter Semester Name (e.g., 'Fall 2024'): ")
+        
+        if semester_name in self.students[student_id]['semesters']:
+            print("Semester already exists!")
+            return
+        
+        self.students[student_id]['semesters'][semester_name] = {
+            'courses': [],
+            'total_credits': 0,
+            'total_grade_points': 0
+        }
+        print(f"Semester {semester_name} added successfully!")
+    
+    def add_course(self):
+        """Add a course to a semester"""
+        student_id = input("Enter Student ID: ")
+        
+        if student_id not in self.students:
+            print("Student not found!")
+            return
+        
+        semester_name = input("Enter Semester Name: ")
+        
+        if semester_name not in self.students[student_id]['semesters']:
+            print("Semester not found!")
+            return
+        
+        print("\n--- Add Course ---")
+        course_code = input("Enter Course Code: ")
+        course_name = input("Enter Course Name: ")
+        credits = float(input("Enter Credits: "))
+        
+        print("\nAvailable Grades: A+, A, A-, B+, B, B-, C+, C, C-, D+, D, F")
+        grade = input("Enter Grade: ").upper()
+        
+        if grade not in self.grade_points:
+            print("Invalid grade!")
+            return
+        
+        course = {
+            'code': course_code,
+            'name': course_name,
+            'credits': credits,
+            'grade': grade,
+            'grade_points': self.grade_points[grade] * credits
+        }
+        
+        self.students[student_id]['semesters'][semester_name]['courses'].append(course)
+        
+        # Update semester totals
+        semester = self.students[student_id]['semesters'][semester_name]
+        semester['total_credits'] += credits
+        semester['total_grade_points'] += course['grade_points']
+        
+        print(f"Course {course_code} added successfully!")
+    
+    def calculate_semester_gpa(self, student_id, semester_name):
+        """Calculate GPA for a specific semester"""
+        semester = self.students[student_id]['semesters'][semester_name]
+        
+        if semester['total_credits'] == 0:
+            return 0.0
+        
+        return semester['total_grade_points'] / semester['total_credits']
+    
+    def calculate_cumulative_gpa(self, student_id):
+        """Calculate cumulative GPA for all semesters"""
+        total_credits = 0
+        total_grade_points = 0
+        
+        for semester_name, semester_data in self.students[student_id]['semesters'].items():
+            total_credits += semester_data['total_credits']
+            total_grade_points += semester_data['total_grade_points']
+        
+        if total_credits == 0:
+            return 0.0
+        
+        return total_grade_points / total_credits
+    
+    def display_student_report(self):
+        """Display complete report for a student"""
+        student_id = input("Enter Student ID: ")
+        
+        if student_id not in self.students:
+            print("Student not found!")
+            return
+        
+        student = self.students[student_id]
+        
+        print(f"\n{'='*60}")
+        print(f"STUDENT REPORT")
+        print(f"{'='*60}")
+        print(f"Student ID: {student_id}")
+        print(f"Name: {student['name']}")
+        print(f"{'='*60}")
+        
+        # Display each semester
+        for semester_name, semester_data in student['semesters'].items():
+            print(f"\nSemester: {semester_name}")
+            print("-" * 40)
+            print(f"{'Course Code':<12} {'Course Name':<20} {'Credits':<8} {'Grade':<6} {'Grade Points':<12}")
+            print("-" * 40)
+            
+            for course in semester_data['courses']:
+                print(f"{course['code']:<12} {course['name']:<20} {course['credits']:<8} "
+                      f"{course['grade']:<6} {course['grade_points']:<12.2f}")
+            
+            semester_gpa = self.calculate_semester_gpa(student_id, semester_name)
+            print(f"\nSemester GPA: {semester_gpa:.2f}")
+            print("-" * 40)
+        
+        # Display cumulative GPA
+        cumulative_gpa = self.calculate_cumulative_gpa(student_id)
+        print(f"\nCUMULATIVE GPA: {cumulative_gpa:.2f}")
+        print(f"{'='*60}")
+    
+    def display_all_students(self):
+        """Display list of all students with their cumulative GPA"""
+        if not self.students:
+            print("No students found!")
+            return
+        
+        print(f"\n{'='*50}")
+        print(f"ALL STUDENTS SUMMARY")
+        print(f"{'='*50}")
+        print(f"{'Student ID':<12} {'Name':<20} {'CGPA':<8}")
+        print(f"{'-'*50}")
+        
+        for student_id, student_data in self.students.items():
+            cgpa = self.calculate_cumulative_gpa(student_id)
+            print(f"{student_id:<12} {student_data['name']:<20} {cgpa:<8.2f}")
+        
+        print(f"{'='*50}")
+    
+    def export_to_file(self):
+        """Export student data to a text file"""
+        student_id = input("Enter Student ID to export: ")
+        
+        if student_id not in self.students:
+            print("Student not found!")
+            return
+        
+        filename = f"{student_id}_report.txt"
+        
+        with open(filename, 'w') as file:
+            student = self.students[student_id]
+            file.write("=" * 60 + "\n")
+            file.write("STUDENT CGPA REPORT\n")
+            file.write("=" * 60 + "\n")
+            file.write(f"Student ID: {student_id}\n")
+            file.write(f"Name: {student['name']}\n")
+            file.write("=" * 60 + "\n\n")
+            
+            for semester_name, semester_data in student['semesters'].items():
+                file.write(f"Semester: {semester_name}\n")
+                file.write("-" * 40 + "\n")
+                file.write(f"{'Course Code':<12} {'Credits':<8} {'Grade':<6} {'Grade Points':<12}\n")
+                file.write("-" * 40 + "\n")
+                
+                for course in semester_data['courses']:
+                    file.write(f"{course['code']:<12} {course['credits']:<8} "
+                              f"{course['grade']:<6} {course['grade_points']:<12.2f}\n")
+                
+                semester_gpa = self.calculate_semester_gpa(student_id, semester_name)
+                file.write(f"\nSemester GPA: {semester_gpa:.2f}\n")
+                file.write("-" * 40 + "\n\n")
+            
+            cumulative_gpa = self.calculate_cumulative_gpa(student_id)
+            file.write(f"CUMULATIVE GPA: {cumulative_gpa:.2f}\n")
+            file.write("=" * 60 + "\n")
+        
+        print(f"Report exported to {filename} successfully!")
+    
+    def display_menu(self):
+        """Display the main menu"""
+        print("\n" + "="*50)
+        print("          CGPA GENERATOR SYSTEM")
+        print("="*50)
+        print("1. Add New Student")
+        print("2. Add Semester")
+        print("3. Add Course")
+        print("4. View Student Report")
+        print("5. View All Students")
+        print("6. Export Report to File")
+        print("7. Exit")
+        print("="*50)
+    
+    def run(self):
+        """Main program loop"""
+        print("Welcome to CGPA Generator System!")
+        
+        while True:
+            self.display_menu()
+            choice = input("Enter your choice (1-7): ")
+            
+            if choice == '1':
+                self.add_student()
+            elif choice == '2':
+                self.add_semester()
+            elif choice == '3':
+                self.add_course()
+            elif choice == '4':
+                self.display_student_report()
+            elif choice == '5':
+                self.display_all_students()
+            elif choice == '6':
+                self.export_to_file()
+            elif choice == '7':
+                print("Thank you for using CGPA Generator System!")
+                break
+            else:
+                print("Invalid choice! Please try again.")
+
+# Sample data for demonstration
+def add_sample_data(generator):
+    """Add sample data for testing"""
+    # Add a sample student
+    generator.students['S001'] = {
+        'name': 'John Doe',
+        'semesters': {
+            'Fall 2023': {
+                'courses': [
+                    {'code': 'CS101', 'name': 'Programming', 'credits': 3, 'grade': 'A', 'grade_points': 12.0},
+                    {'code': 'MATH101', 'name': 'Calculus', 'credits': 4, 'grade': 'B+', 'grade_points': 13.2},
+                    {'code': 'PHY101', 'name': 'Physics', 'credits': 3, 'grade': 'A-', 'grade_points': 11.1}
+                ],
+                'total_credits': 10,
+                'total_grade_points': 36.3
+            },
+            'Spring 2024': {
+                'courses': [
+                    {'code': 'CS102', 'name': 'Data Structures', 'credits': 3, 'grade': 'A', 'grade_points': 12.0},
+                    {'code': 'MATH102', 'name': 'Algebra', 'credits': 4, 'grade': 'A-', 'grade_points': 14.8},
+                    {'code': 'ENG101', 'name': 'English', 'credits': 2, 'grade': 'B', 'grade_points': 6.0}
+                ],
+                'total_credits': 9,
+                'total_grade_points': 32.8
+            }
+        }
+    }
+
+# Run the program
+if __name__ == "__main__":
+    generator = CGPAGenerator()
+    
+    # Uncomment the next line to add sample data
+    add_sample_data(generator)
+    
+    generator.run()
